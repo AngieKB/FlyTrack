@@ -3,6 +3,8 @@ package co.uniquindio.software.devops.model.dto;
 import co.uniquindio.software.devops.model.entity.FlightStatus;
 import lombok.*;
 import java.time.LocalDateTime;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class FlightDTO {
