@@ -3,16 +3,15 @@ package co.uniquindio.software.devops.controller;
 import co.uniquindio.software.devops.model.dto.FlightDTO;
 import co.uniquindio.software.devops.model.entity.FlightStatus;
 import co.uniquindio.software.devops.service.FlightService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -26,14 +25,13 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(FlightController.class)
 public class FlightControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
 
-    @MockBean
+    @MockitoBean
     private FlightService flightService;
 
     @Autowired
@@ -139,7 +137,7 @@ public class FlightControllerTest {
     @Test
     @WithMockUser
     void delete_ShouldReturnNoContent() throws Exception {
-        doNothing().when(flightService.delete(1L));
+        doNothing().when(flightService).delete(1L);
 
         mockMvc.perform(delete("/api/flights/1")
                         .with(csrf()))
