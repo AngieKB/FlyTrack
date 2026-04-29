@@ -13,8 +13,6 @@
 # Gradle
 build/
 .gradle/
-gradle-wrapper.jar
-gradle-wrapper.properties
 
 # Maven
 target/

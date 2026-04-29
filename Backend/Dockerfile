@@ -9,7 +9,7 @@ COPY gradle ./gradle
 COPY src ./src
 
 # Compilar y generar el JAR
-RUN ./gradlew build -x test --no-daemon
+RUN chmod +x ./gradlew && ./gradlew build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
