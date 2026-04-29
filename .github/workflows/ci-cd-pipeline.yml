@@ -59,6 +59,10 @@ jobs:
     runs-on: ubuntu-latest
     name: Automated Tests (JUnit)
     needs: build
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: read
 
     services:
       mariadb:
@@ -130,7 +134,7 @@ jobs:
 
       - name: Publish test report
         uses: dorny/test-reporter@v1
-        if: always()
+        if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
         with:
           name: Test Results
           path: 'Backend/build/test-results/**/*.xml'
