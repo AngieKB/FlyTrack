@@ -47,7 +47,7 @@ jobs:
           ./gradlew build -x test --no-daemon
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-artifacts
           path: Backend/build/libs/
@@ -107,7 +107,7 @@ jobs:
           ./gradlew test --no-daemon
 
       - name: Upload test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: always()
         with:
           name: test-results
