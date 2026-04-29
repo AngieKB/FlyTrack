@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  mariadb-staging:
+    image: mariadb:latest
+    container_name: flytrack-mariadb-staging
+    environment:
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root}
+      MARIADB_DATABASE: ${DB_NAME:-flytrack_db}
+      MARIADB_USER: ${DB_USER:-root}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-root}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mariadb-data-staging:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - flytrack-network
+
+  flytrack-app-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY}:tests
+    container_name: flytrack-app-staging
+    depends_on:
+      mariadb-staging:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb-staging:3306/${DB_NAME:-flytrack_db}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-root}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-root}
+      SPRING_PROFILES_ACTIVE: staging
+    ports:
+      - "8080:8080"
+    networks:
+      - flytrack-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:8080/actuator/health']
+      timeout: 10s
+      retries: 5
+      interval: 10s
+
+volumes:
+  mariadb-data-staging:
+
+networks:
+  flytrack-network:
+    driver: bridge
+

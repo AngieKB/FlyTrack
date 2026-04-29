@@ -1,0 +1,42 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+*.iml
+
+# Gradle
+build/
+.gradle/
+gradle-wrapper.jar
+gradle-wrapper.properties
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+
+# Test
+src/test/
+build/test-results/
+
+# Documentation
+README.md
+DEVOPS_PIPELINE.md
+*.md
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+Jenkinsfile
+
+# Temporal
+.env.local
+.env.*.local
+*.log
+

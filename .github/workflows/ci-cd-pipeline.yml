@@ -1,0 +1,282 @@
+name: CI/CD Pipeline - FlyTrack
+
+on:
+  push:
+    branches:
+      - tests
+      - main
+  pull_request:
+    branches:
+      - tests
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ============================================
+  # ETAPA 1: Compilación
+  # ============================================
+  build:
+    runs-on: ubuntu-latest
+    name: Build & Compile
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./Backend/gradlew
+
+      - name: Compile project
+        run: |
+          cd Backend
+          ./gradlew clean compileJava --no-daemon
+
+      - name: Build project
+        run: |
+          cd Backend
+          ./gradlew build -x test --no-daemon
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-artifacts
+          path: Backend/build/libs/
+
+  # ============================================
+  # ETAPA 2: Pruebas Automatizadas (JUnit)
+  # ============================================
+  test:
+    runs-on: ubuntu-latest
+    name: Automated Tests (JUnit)
+    needs: build
+
+    services:
+      mariadb:
+        image: mariadb:latest
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: flytrack_db
+          MARIADB_USER: root
+          MARIADB_PASSWORD: root
+        options: >-
+          --health-cmd="health_check.sh"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+        ports:
+          - 3306:3306
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Make gradlew executable
+        run: chmod +x ./Backend/gradlew
+
+      - name: Wait for MariaDB to be ready
+        run: |
+          for i in {1..30}; do
+            if nc -z localhost 3306; then
+              echo "MariaDB is ready"
+              break
+            fi
+            echo "Waiting for MariaDB... ($i/30)"
+            sleep 1
+          done
+
+      - name: Run tests
+        run: |
+          cd Backend
+          ./gradlew test --no-daemon
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: test-results
+          path: Backend/build/test-results/
+
+      - name: Publish test report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results
+          path: 'Backend/build/test-results/**/*.xml'
+          reporter: 'java-junit'
+
+  # ============================================
+  # ETAPA 3: Análisis de Calidad de Código (SonarQube)
+  # ============================================
+  # NOTA: Esta etapa está comentada. Se activa cuando tengamos SonarQube configurado
+  # quality-analysis:
+  #   runs-on: ubuntu-latest
+  #   name: Code Quality Analysis (SonarQube)
+  #   needs: test
+  #
+  #   steps:
+  #     - name: Checkout code
+  #       uses: actions/checkout@v4
+  #
+  #     - name: Set up JDK 21
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: '21'
+  #         distribution: 'temurin'
+  #
+  #     - name: Run SonarQube analysis
+  #       run: |
+  #         cd Backend
+  #         ./gradlew sonarqube \
+  #           -Dsonar.projectKey=FlyTrack \
+  #           -Dsonar.sources=src/main/java \
+  #           -Dsonar.tests=src/test/java \
+  #           -Dsonar.host.url=https://your-sonarqube-instance \
+  #           -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
+
+  # ============================================
+  # ETAPA 4: Build de imagen Docker
+  # ============================================
+  docker-build:
+    runs-on: ubuntu-latest
+    name: Build Docker Image
+    needs: test
+    if: github.event_name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha,prefix={{branch}}-
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: Backend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # ETAPA 5: Despliegue a STAGING (rama: tests)
+  # ============================================
+  deploy-staging:
+    runs-on: ubuntu-latest
+    name: Deploy to Staging
+    needs: docker-build
+    if: github.ref == 'refs/heads/tests' && github.event_name == 'push'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Staging
+        run: |
+          echo "🚀 Desplegando a STAGING"
+          echo "Rama: tests"
+          echo "Imagen: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tests"
+          # TODO: Aquí irían los comandos reales de despliegue, nos falta implementarlo
+          # Ejemplo: docker pull, docker run, kubectl apply, etc.
+          echo "Despliegue a staging completado"
+
+      - name: Notify Staging Deployment
+        run: |
+          echo "Aplicación desplegada en STAGING"
+          echo "Commit: ${{ github.sha }}"
+          echo "Autor: ${{ github.actor }}"
+
+  # ============================================
+  # ETAPA 6: Despliegue a PRODUCCIÓN (rama: main)
+  # ============================================
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production
+    needs: docker-build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    environment:
+      name: production
+      url: https://flytrack-prod.example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Request Manual Approval (Optional)
+        run: |
+          echo "Esperando aprobación para despliegue a producción..."
+          echo "Este paso puede automatizarse o requerir aprobación manual en GitHub"
+
+      - name: Deploy to Production
+        run: |
+          echo "Desplegando a PRODUCCIÓN"
+          echo "Rama: main"
+          echo "Imagen: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
+          # TODO: Aquí irían los comandos reales de despliegue
+          # Ejemplo: docker pull, docker run, kubectl apply, etc.
+          echo "Despliegue a producción completado"
+
+      - name: Notify Production Deployment
+        run: |
+          echo "Aplicación desplegada en PRODUCCIÓN"
+          echo "Commit: ${{ github.sha }}"
+          echo "Autor: ${{ github.actor }}"
+          echo "URL: https://flytrack-prod.example.com"
+
+  # ============================================
+  # NOTIFICACIONES
+  # ============================================
+  notify-failure:
+    runs-on: ubuntu-latest
+    name: Notify on Failure
+    if: failure()
+    needs: [build, test, docker-build]
+
+    steps:
+      - name: Send failure notification
+        run: |
+          echo "El pipeline ha fallado"
+          echo "Workflow: ${{ github.workflow }}"
+          echo "Rama: ${{ github.ref }}"
+          echo "Commit: ${{ github.sha }}"
+

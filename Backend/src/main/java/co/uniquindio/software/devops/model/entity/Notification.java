@@ -21,6 +21,7 @@ public class Notification {
 
     private LocalDateTime sentAt;
 
+    @Column(name = "is_read")
     private boolean read;
 
     @ManyToOne
