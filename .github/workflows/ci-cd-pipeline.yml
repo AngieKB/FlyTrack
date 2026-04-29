@@ -62,19 +62,23 @@ jobs:
 
     services:
       mariadb:
-        image: mariadb:latest
+        image: mariadb:11.4
         env:
-          MARIADB_ROOT_PASSWORD: root
+          MARIADB_ROOT_PASSWORD: root123
           MARIADB_DATABASE: flytrack_db
-          MARIADB_USER: root
-          MARIADB_PASSWORD: root
         options: >-
-          --health-cmd="health_check.sh"
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
           --health-interval=10s
-          --health-timeout=5s
+          --health-timeout=10s
           --health-retries=5
         ports:
           - 3306:3306
+
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      SPRING_DATASOURCE_URL: jdbc:mariadb://localhost:3306/flytrack_db
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root123
 
     steps:
       - name: Checkout code
@@ -92,14 +96,18 @@ jobs:
 
       - name: Wait for MariaDB to be ready
         run: |
-          for i in {1..30}; do
-            if nc -z localhost 3306; then
+          for i in {1..60}; do
+            if mysqladmin ping -h localhost -u root -proot123 --silent; then
               echo "MariaDB is ready"
               break
             fi
-            echo "Waiting for MariaDB... ($i/30)"
+            echo "Waiting for MariaDB... ($i/60)"
             sleep 1
           done
+          if ! mysqladmin ping -h localhost -u root -proot123 --silent; then
+            echo "MariaDB failed to start"
+            exit 1
+          fi
 
       - name: Run tests
         run: |
