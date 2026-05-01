@@ -1,13 +1,14 @@
 services:
   mariadb:
     image: 'mariadb:latest'
+    command: --plugin-load-add=auth_gssapi=OFF --default-authentication-plugin=mysql_native_password
     environment:
       - 'MARIADB_DATABASE=flytrack_db'
-      - 'MARIADB_PASSWORD=root'
-      - 'MARIADB_ROOT_PASSWORD=root'
-      - 'MARIADB_USER=root'
+      - 'MARIADB_ROOT_PASSWORD=rootpassword'
+      - 'MARIADB_USER=flytrack'
+      - 'MARIADB_PASSWORD=flytrack123'
     ports:
-      - '3306:3306'
+      - '3307:3306'
     healthcheck:
       test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
       timeout: 20s
