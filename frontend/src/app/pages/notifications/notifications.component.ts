@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -21,7 +21,7 @@ export class NotificationsComponent implements OnInit {
 
   private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.loadNotifications();
@@ -30,7 +30,11 @@ export class NotificationsComponent implements OnInit {
   loadNotifications() {
     this.loading = true;
     this.api.get<any[]>('/notifications').subscribe({
-      next: (data) => { this.notifications = data; this.loading = false; },
+      next: (data) => {
+        this.notifications = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
       error: (err) => {
         this.toast.showToast('Error cargando notificaciones: ' + err.message, 'error');
         this.loading = false;
@@ -86,6 +90,7 @@ export class NotificationsComponent implements OnInit {
 
   closeModal() {
     this.notifModalOpen = false;
+    this.cdr.detectChanges();
   }
 
   statusBadge(type: string): string {

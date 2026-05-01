@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../services/api.service';
 import { forkJoin } from 'rxjs';
@@ -18,7 +18,7 @@ export class DashboardComponent implements OnInit {
   recentNotifications: any[] = [];
   loading = true;
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     forkJoin({
@@ -36,10 +36,12 @@ export class DashboardComponent implements OnInit {
         this.recentFlights = flights.slice(0, 5);
         this.recentNotifications = notifications.filter((n: any) => !n.read).slice(0, 5);
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         console.error(err);
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }

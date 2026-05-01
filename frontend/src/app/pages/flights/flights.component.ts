@@ -1,4 +1,5 @@
 import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -31,7 +32,7 @@ export class FlightsComponent implements OnInit {
 
   private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.loadFlights();
@@ -51,6 +52,7 @@ export class FlightsComponent implements OnInit {
       next: (data) => {
         this.flights = data;
         this.loading = false;
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.toast.showToast('Error cargando vuelos: ' + err.message, 'error');
@@ -81,6 +83,7 @@ export class FlightsComponent implements OnInit {
   closeModal() {
     this.flightModalOpen = false;
     this.resetForm();
+    this.cdr.detectChanges();
   }
 
   resetForm() {

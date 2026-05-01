@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -22,7 +22,7 @@ export class BaggageComponent implements OnInit {
 
   private toast = inject(ToastService);  // ← inyecta ToastService
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.loadBaggage();
@@ -31,7 +31,11 @@ export class BaggageComponent implements OnInit {
   loadBaggage() {
     this.loading = true;
     this.api.get<any[]>('/baggage-reports').subscribe({
-      next: (data) => { this.baggageReports = data; this.loading = false; },
+      next: (data) => {
+        this.baggageReports = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
       error: (err) => {
         this.toast.showToast('Error cargando reportes: ' + err.message, 'error'); // ← corregido
         this.loading = false;
@@ -88,6 +92,7 @@ export class BaggageComponent implements OnInit {
 
   closeModal() {
     this.baggageModalOpen = false;
+    this.cdr.detectChanges();
   }
 
   statusBadge(status: string): string {

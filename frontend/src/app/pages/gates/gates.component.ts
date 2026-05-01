@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
@@ -23,7 +23,7 @@ export class GatesComponent implements OnInit {
 
   private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
-  constructor(private api: ApiService) {}
+  constructor(private api: ApiService, private cdr: ChangeDetectorRef) { }
 
   ngOnInit() {
     this.loadGates();
@@ -32,10 +32,15 @@ export class GatesComponent implements OnInit {
   loadGates() {
     this.loading = true;
     this.api.get<any[]>('/gates').subscribe({
-      next: (data) => { this.gates = data; this.loading = false; },
+      next: (data) => {
+        this.gates = data;
+        this.loading = false;
+        this.cdr.detectChanges();
+      },
       error: (err) => {
         this.toast.showToast('Error cargando puertas: ' + err.message, 'error');
         this.loading = false;
+        this.cdr.detectChanges();
       }
     });
   }
@@ -57,6 +62,7 @@ export class GatesComponent implements OnInit {
   closeModal() {
     this.gateModalOpen = false;
     this.resetForm();
+    this.cdr.detectChanges();
   }
 
   resetForm() {
