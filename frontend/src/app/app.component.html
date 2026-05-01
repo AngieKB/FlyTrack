@@ -1,0 +1,83 @@
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">AeroPuerto Smart</div>
+    <div class="logo-name">Fly<span>Track</span></div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Panel</div>
+    <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+        <rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+      </svg>
+      Dashboard
+    </a>
+    <div class="nav-section">Operaciones</div>
+    <a class="nav-item" routerLink="/flights" routerLinkActive="active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M22 2L11 13M22 2L15 22l-4-9-9-4 19-7z"/>
+      </svg>
+      Vuelos
+    </a>
+    <a class="nav-item" routerLink="/gates" routerLinkActive="active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+        <polyline points="9,22 9,12 15,12 15,22"/>
+      </svg>
+      Puertas
+    </a>
+    <div class="nav-section">Pasajeros</div>
+    <a class="nav-item" routerLink="/passengers" routerLinkActive="active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+      </svg>
+      Pasajeros
+    </a>
+    <a class="nav-item" routerLink="/baggage" routerLinkActive="active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="2" y="7" width="20" height="14" rx="2"/>
+        <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+        <line x1="12" y1="12" x2="12" y2="16"/>
+        <line x1="10" y1="14" x2="14" y2="14"/>
+      </svg>
+      Equipaje
+    </a>
+    <div class="nav-section">Sistema</div>
+    <a class="nav-item" routerLink="/notifications" routerLinkActive="active">
+      <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/>
+      </svg>
+      Notificaciones
+    </a>
+  </div>
+  <div class="status-bar">
+    <span class="status-dot"></span>Backend conectado<br>
+    <span style="opacity:0.6">localhost:8080</span>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div>
+      <div class="page-title" [innerHTML]="pageTitle"></div>
+    </div>
+    <div class="topbar-actions">
+      <div class="time-display">{{ clock }}</div>
+    </div>
+  </div>
+  <div class="content">
+    <router-outlet></router-outlet>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container">
+  <div *ngFor="let toast of toasts" class="toast" [class.toast-success]="toast.type === 'success'" [class.toast-error]="toast.type === 'error'">
+    <span>{{ toast.type === 'success' ? '✓' : '✕' }}</span>
+    {{ toast.message }}
+  </div>
+</div>

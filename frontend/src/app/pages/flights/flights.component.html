@@ -1,0 +1,84 @@
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Gestión de Vuelos</div>
+      <div class="panel-subtitle">/api/flights</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar vuelo...">
+      </div>
+      <button class="btn btn-primary" (click)="openModal()">+ Nuevo Vuelo</button>
+    </div>
+  </div>
+
+  <table *ngIf="!loading && flights.length > 0; else emptyOrLoading">
+    <thead>
+    <tr>
+      <th>Número</th><th>Origen</th><th>Destino</th><th>Salida</th><th>Llegada</th><th>Estado</th><th>Aerolínea</th><th>Puerta</th><th>Acciones</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let f of filteredFlights">
+      <td><span class="mono text-amber">{{ f.flightNumber || '—' }}</span></td>
+      <td>{{ f.origin || '—' }}</td>
+      <td>{{ f.destination || '—' }}</td>
+      <td class="mono" style="font-size:11px">{{ formatDate(f.departureTime) }}</td>
+      <td class="mono" style="font-size:11px">{{ formatDate(f.arrivalTime) }}</td>
+      <td><span [class]="statusBadge(f.status)">{{ f.status || '—' }}</span></td>
+      <td>{{ f.airline || '—' }}</td>
+      <td>
+        <span *ngIf="f.gateCode" class="badge badge-blue">{{ f.gateCode }}</span>
+        <span *ngIf="!f.gateCode">—</span>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-sm" (click)="openModal(f)">Editar</button>
+          <button class="btn btn-sm btn-danger" (click)="deleteFlight(f.id)">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <ng-template #emptyOrLoading>
+    <div *ngIf="loading" class="loading"><div class="spinner"></div>Cargando datos...</div>
+    <div *ngIf="!loading" class="empty"><div class="empty-text">Sin registros aún</div></div>
+  </ng-template>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="flightModalOpen" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">{{ modalTitle }}</div>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field"><label>Número de Vuelo *</label><input type="text" [(ngModel)]="flightNumber" placeholder="EX123"></div>
+        <div class="form-field"><label>Aerolínea</label><input type="text" [(ngModel)]="airline" placeholder="EasyFly"></div>
+        <div class="form-field"><label>Origen *</label><input type="text" [(ngModel)]="origin" placeholder="Bogotá"></div>
+        <div class="form-field"><label>Destino *</label><input type="text" [(ngModel)]="destination" placeholder="Medellín"></div>
+        <div class="form-field"><label>Hora de Salida *</label><input type="datetime-local" [(ngModel)]="departureTime"></div>
+        <div class="form-field"><label>Hora de Llegada *</label><input type="datetime-local" [(ngModel)]="arrivalTime"></div>
+        <div class="form-field"><label>Estado</label>
+          <select [(ngModel)]="status">
+            <option value="SCHEDULED">SCHEDULED</option>
+            <option value="BOARDING">BOARDING</option>
+            <option value="DEPARTED">DEPARTED</option>
+            <option value="ARRIVED">ARRIVED</option>
+            <option value="DELAYED">DELAYED</option>
+            <option value="CANCELLED">CANCELLED</option>
+          </select>
+        </div>
+        <div class="form-field"><label>ID de Puerta</label><input type="number" [(ngModel)]="gateId" placeholder="1"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="saveFlight()">Guardar</button>
+    </div>
+  </div>
+</div>

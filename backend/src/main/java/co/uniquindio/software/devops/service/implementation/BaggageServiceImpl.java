@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class BaggageReportServiceImpl implements BaggageReportService {
+public class BaggageServiceImpl implements BaggageReportService {
 
     private final BaggageReportRepository baggageReportRepository;
     private final PassengerRepository passengerRepository;

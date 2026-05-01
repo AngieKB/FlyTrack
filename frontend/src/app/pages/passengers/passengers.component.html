@@ -1,0 +1,65 @@
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Gestión de Pasajeros</div>
+      <div class="panel-subtitle">/api/passengers</div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="search-box">
+        <span class="search-icon">⌕</span>
+        <input type="text" [(ngModel)]="searchTerm" placeholder="Buscar pasajero...">
+      </div>
+      <button class="btn btn-primary" (click)="openModal()">+ Nuevo Pasajero</button>
+    </div>
+  </div>
+
+  <table *ngIf="!loading && passengers.length > 0; else emptyOrLoading">
+    <thead>
+    <tr><th>Nombre</th><th>Email</th><th>Documento</th><th>Asiento</th><th>Vuelo ID</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let p of filteredPassengers">
+      <td><span style="font-weight:600">{{ p.firstName }} {{ p.lastName }}</span></td>
+      <td style="font-size:12px">{{ p.email || '—' }}</td>
+      <td class="mono" style="font-size:11px">{{ p.documentNumber || '—' }}</td>
+      <td><span *ngIf="p.seatNumber" class="badge badge-purple">{{ p.seatNumber }}</span><span *ngIf="!p.seatNumber">—</span></td>
+      <td><span *ngIf="p.flightId" class="badge badge-blue">#{{ p.flightId }}</span><span *ngIf="!p.flightId">—</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-sm" (click)="openModal(p)">Editar</button>
+          <button class="btn btn-sm btn-danger" (click)="deletePassenger(p.id)">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <ng-template #emptyOrLoading>
+    <div *ngIf="loading" class="loading"><div class="spinner"></div>Cargando datos...</div>
+    <div *ngIf="!loading" class="empty"><div class="empty-text">Sin registros aún</div></div>
+  </ng-template>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="passengerModalOpen" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">{{ modalTitle }}</div>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field"><label>Nombre *</label><input type="text" [(ngModel)]="firstName" placeholder="Juan"></div>
+        <div class="form-field"><label>Apellido *</label><input type="text" [(ngModel)]="lastName" placeholder="García"></div>
+        <div class="form-field"><label>Email *</label><input type="email" [(ngModel)]="email" placeholder="juan@email.com"></div>
+        <div class="form-field"><label>Número de Documento *</label><input type="text" [(ngModel)]="documentNumber" placeholder="CC 1234567"></div>
+        <div class="form-field"><label>Asiento</label><input type="text" [(ngModel)]="seatNumber" placeholder="14A"></div>
+        <div class="form-field"><label>ID de Vuelo</label><input type="number" [(ngModel)]="flightId" placeholder="1"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="savePassenger()">Guardar</button>
+    </div>
+  </div>
+</div>

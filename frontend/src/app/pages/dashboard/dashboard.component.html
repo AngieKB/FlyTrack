@@ -1,0 +1,64 @@
+<div class="stats-row">
+  <div class="stat-card">
+    <div class="stat-label">Vuelos Totales</div>
+    <div class="stat-value">{{ flightsCount }}</div>
+    <div class="stat-sub">En sistema</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Puertas Disponibles</div>
+    <div class="stat-value">{{ gatesCount }}</div>
+    <div class="stat-sub">Listas para asignar</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Pasajeros</div>
+    <div class="stat-value">{{ passengersCount }}</div>
+    <div class="stat-sub">Registrados</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-label">Reportes Equipaje</div>
+    <div class="stat-value">{{ baggageCount }}</div>
+    <div class="stat-sub">Pendientes revisión</div>
+  </div>
+</div>
+
+<div class="runway-line"></div>
+
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Vuelos Recientes</div>
+        <div class="panel-subtitle">Últimos registrados</div>
+      </div>
+    </div>
+    <div *ngIf="recentFlights.length === 0" class="empty">
+      <div class="empty-text">Sin vuelos</div>
+    </div>
+    <div *ngFor="let f of recentFlights" style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">
+      <div>
+        <span class="mono text-amber">{{ f.flightNumber || '—' }}</span>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px">{{ f.origin || '—' }} → {{ f.destination || '—' }}</div>
+      </div>
+      <span [class]="statusBadge(f.status)">{{ f.status || '—' }}</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <div>
+        <div class="panel-title">Notificaciones Recientes</div>
+        <div class="panel-subtitle">Sin leer</div>
+      </div>
+    </div>
+    <div *ngIf="recentNotifications.length === 0" class="empty">
+      <div class="empty-text">Sin notificaciones</div>
+    </div>
+    <div *ngFor="let n of recentNotifications" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+      <div style="font-size:13px">{{ n.message || '—' }}</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-top:6px">
+        <span [class]="statusBadge(n.type)">{{ n.type || '—' }}</span>
+        <span style="font-size:11px;color:var(--text-muted)">{{ formatDate(n.sentAt) }}</span>
+      </div>
+    </div>
+  </div>
+</div>

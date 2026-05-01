@@ -1,0 +1,63 @@
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Gestión de Puertas</div>
+      <div class="panel-subtitle">/api/gates</div>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">+ Nueva Puerta</button>
+  </div>
+
+  <table *ngIf="!loading && gates.length > 0; else emptyOrLoading">
+    <thead>
+    <tr><th>Código</th><th>Terminal</th><th>Disponible</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let g of gates">
+      <td><span class="badge badge-blue">{{ g.gateCode || '—' }}</span></td>
+      <td>{{ g.terminal || '—' }}</td>
+      <td>
+        <span *ngIf="g.available" class="badge badge-green">Disponible</span>
+        <span *ngIf="!g.available" class="badge badge-red">Ocupada</span>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-sm" (click)="openModal(g)">Editar</button>
+          <button class="btn btn-sm btn-danger" (click)="deleteGate(g.id)">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <ng-template #emptyOrLoading>
+    <div *ngIf="loading" class="loading"><div class="spinner"></div>Cargando datos...</div>
+    <div *ngIf="!loading" class="empty"><div class="empty-text">Sin registros aún</div></div>
+  </ng-template>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="gateModalOpen" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">{{ modalTitle }}</div>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field"><label>Código de Puerta *</label><input type="text" [(ngModel)]="gateCode" placeholder="A1"></div>
+        <div class="form-field"><label>Terminal *</label><input type="text" [(ngModel)]="terminal" placeholder="Terminal Norte"></div>
+        <div class="form-field full">
+          <label>¿Disponible?</label>
+          <select [(ngModel)]="available">
+            <option [ngValue]="true">Sí</option>
+            <option [ngValue]="false">No</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="saveGate()">Guardar</button>
+    </div>
+  </div>
+</div>

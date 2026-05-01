@@ -1,6 +1,8 @@
 package co.uniquindio.software.devops.model.dto;
 
 import co.uniquindio.software.devops.model.entity.FlightStatus;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 import java.time.LocalDateTime;
 
@@ -8,7 +10,7 @@ import java.time.LocalDateTime;
 public class FlightDTO {
     private Long id;
 
-    @NotBlank(message = "El número de vuelo es obligatorio")
+    @NotBlank(message = "El nÃºmero de vuelo es obligatorio")
     private String flightNumber;
 
     @NotBlank(message = "El origen es obligatorio")

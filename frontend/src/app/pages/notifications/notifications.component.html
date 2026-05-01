@@ -1,0 +1,67 @@
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Notificaciones</div>
+      <div class="panel-subtitle">/api/notifications</div>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">+ Nueva Notificación</button>
+  </div>
+
+  <table *ngIf="!loading && notifications.length > 0; else emptyOrLoading">
+    <thead>
+    <tr><th>Mensaje</th><th>Tipo</th><th>Enviado</th><th>Leído</th><th>Vuelo ID</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let n of notifications">
+      <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ n.message || '—' }}</td>
+      <td><span [class]="statusBadge(n.type)">{{ n.type || '—' }}</span></td>
+      <td class="mono" style="font-size:11px">{{ formatDate(n.sentAt) }}</td>
+      <td>
+        <span *ngIf="n.read" class="badge badge-green">Leído</span>
+        <span *ngIf="!n.read" class="badge badge-amber">Sin leer</span>
+      </td>
+      <td><span *ngIf="n.flightId" class="badge badge-blue">#{{ n.flightId }}</span><span *ngIf="!n.flightId">—</span></td>
+      <td>
+        <div class="actions-cell">
+          <button *ngIf="!n.read" class="btn btn-sm" (click)="markRead(n.id)">Marcar leído</button>
+          <button class="btn btn-sm btn-danger" (click)="deleteNotif(n.id)">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <ng-template #emptyOrLoading>
+    <div *ngIf="loading" class="loading"><div class="spinner"></div>Cargando datos...</div>
+    <div *ngIf="!loading" class="empty"><div class="empty-text">Sin registros aún</div></div>
+  </ng-template>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="notifModalOpen" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Nueva Notificación</div>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field full"><label>Mensaje *</label><input type="text" [(ngModel)]="message" placeholder="Vuelo retrasado 30 minutos..."></div>
+        <div class="form-field"><label>Tipo</label>
+          <select [(ngModel)]="type">
+            <option value="DELAY">DELAY</option>
+            <option value="GATE_CHANGE">GATE_CHANGE</option>
+            <option value="CANCELLATION">CANCELLATION</option>
+            <option value="BOARDING">BOARDING</option>
+            <option value="GENERAL">GENERAL</option>
+          </select>
+        </div>
+        <div class="form-field"><label>ID de Vuelo</label><input type="number" [(ngModel)]="flightId" placeholder="1"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="saveNotification()">Guardar</button>
+    </div>
+  </div>
+</div>

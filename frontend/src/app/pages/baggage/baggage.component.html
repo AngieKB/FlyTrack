@@ -1,0 +1,65 @@
+<div class="panel">
+  <div class="panel-header">
+    <div>
+      <div class="panel-title">Reportes de Equipaje</div>
+      <div class="panel-subtitle">/api/baggage-reports</div>
+    </div>
+    <button class="btn btn-primary" (click)="openModal()">+ Nuevo Reporte</button>
+  </div>
+
+  <table *ngIf="!loading && baggageReports.length > 0; else emptyOrLoading">
+    <thead>
+    <tr><th>ID</th><th>Descripción</th><th>Estado</th><th>Tag</th><th>Reportado</th><th>Pasajero ID</th><th>Acciones</th></tr>
+    </thead>
+    <tbody>
+    <tr *ngFor="let b of baggageReports">
+      <td class="mono">#{{ b.id }}</td>
+      <td style="max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.description || '—' }}</td>
+      <td><span [class]="statusBadge(b.status)">{{ b.status || '—' }}</span></td>
+      <td class="mono" style="font-size:11px">{{ b.baggageTag || '—' }}</td>
+      <td class="mono" style="font-size:11px">{{ formatDate(b.reportedAt) }}</td>
+      <td><span *ngIf="b.passengerId" class="badge badge-blue">#{{ b.passengerId }}</span><span *ngIf="!b.passengerId">—</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="btn btn-sm" (click)="updateStatus(b.id, 'RESOLVED')">✓ Resolver</button>
+          <button class="btn btn-sm btn-danger" (click)="deleteBaggage(b.id)">Eliminar</button>
+        </div>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+
+  <ng-template #emptyOrLoading>
+    <div *ngIf="loading" class="loading"><div class="spinner"></div>Cargando datos...</div>
+    <div *ngIf="!loading" class="empty"><div class="empty-text">Sin registros aún</div></div>
+  </ng-template>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" *ngIf="baggageModalOpen" (click)="closeModal()">
+  <div class="modal" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title">Nuevo Reporte de Equipaje</div>
+      <button class="modal-close" (click)="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-field full"><label>Descripción *</label><input type="text" [(ngModel)]="description" placeholder="Maleta dañada en vuelo..."></div>
+        <div class="form-field"><label>Tag de Equipaje</label><input type="text" [(ngModel)]="baggageTag" placeholder="BAG-001"></div>
+        <div class="form-field"><label>Estado</label>
+          <select [(ngModel)]="status">
+            <option value="REPORTED">REPORTED</option>
+            <option value="IN_REVIEW">IN_REVIEW</option>
+            <option value="RESOLVED">RESOLVED</option>
+            <option value="CLOSED">CLOSED</option>
+          </select>
+        </div>
+        <div class="form-field full"><label>ID de Pasajero</label><input type="number" [(ngModel)]="passengerId" placeholder="1"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" (click)="closeModal()">Cancelar</button>
+      <button class="btn btn-primary" (click)="saveBaggage()">Guardar</button>
+    </div>
+  </div>
+</div>
