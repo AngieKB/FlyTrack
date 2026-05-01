@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { AppComponent } from '../../app.component';
+import { ToastService } from '../../services/toast.service';  // ← importación corregida
 
 @Component({
   standalone: true,
@@ -25,7 +25,7 @@ export class PassengersComponent implements OnInit {
   seatNumber = '';
   flightId: number | null = null;
 
-  private app = inject(AppComponent);
+  private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
   constructor(private api: ApiService) {}
 
@@ -45,7 +45,10 @@ export class PassengersComponent implements OnInit {
     this.loading = true;
     this.api.get<any[]>('/passengers').subscribe({
       next: (data) => { this.passengers = data; this.loading = false; },
-      error: (err) => { this.app.showToast('Error cargando pasajeros: ' + err.message, 'error'); this.loading = false; }
+      error: (err) => {
+        this.toast.showToast('Error cargando pasajeros: ' + err.message, 'error');
+        this.loading = false;
+      }
     });
   }
 
@@ -97,19 +100,22 @@ export class PassengersComponent implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.app.showToast(this.editingPassenger.id ? 'Pasajero actualizado' : 'Pasajero registrado', 'success');
+        this.toast.showToast(this.editingPassenger.id ? 'Pasajero actualizado' : 'Pasajero registrado', 'success');
         this.closeModal();
         this.loadPassengers();
       },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
   deletePassenger(id: number) {
     if (!confirm('¿Eliminar este pasajero?')) return;
     this.api.delete('/passengers/' + id).subscribe({
-      next: () => { this.app.showToast('Pasajero eliminado', 'success'); this.loadPassengers(); },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      next: () => {
+        this.toast.showToast('Pasajero eliminado', 'success');
+        this.loadPassengers();
+      },
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 }

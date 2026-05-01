@@ -2,11 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { RouterModule, Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { CommonModule } from '@angular/common';
-
-interface Toast {
-  message: string;
-  type: 'success' | 'error';
-}
+import { ToastService, Toast } from './services/toast.service';
 
 @Component({
   standalone: true,
@@ -20,7 +16,10 @@ export class AppComponent implements OnInit, OnDestroy {
   toasts: Toast[] = [];
   private clockInterval: any;
 
-  constructor(private router: Router) {}
+  constructor(
+    private router: Router,
+    private toastService: ToastService   // ← inyectamos el servicio
+  ) {}
 
   ngOnInit() {
     this.updateClock();
@@ -31,6 +30,11 @@ export class AppComponent implements OnInit, OnDestroy {
       .subscribe((event: NavigationEnd) => {
         this.updateTitleFromRoute(event.urlAfterRedirects);
       });
+
+    // Suscripción a los toasts del servicio
+    this.toastService.toasts$.subscribe(toasts => {
+      this.toasts = toasts;
+    });
   }
 
   ngOnDestroy() {
@@ -54,11 +58,5 @@ export class AppComponent implements OnInit, OnDestroy {
     this.pageTitle = titles[segment] || segment;
   }
 
-  showToast(message: string, type: 'success' | 'error') {
-    const toast: Toast = { message, type };
-    this.toasts.push(toast);
-    setTimeout(() => {
-      this.toasts = this.toasts.filter(t => t !== toast);
-    }, 3500);
-  }
+  // El método showToast se elimina; ya no se usa directamente
 }

@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { AppComponent } from '../../app.component';
+import { ToastService } from '../../services/toast.service';  // ← importación corregida
 
 @Component({
   standalone: true,
@@ -21,7 +21,7 @@ export class GatesComponent implements OnInit {
   terminal = '';
   available = true;
 
-  private app = inject(AppComponent);
+  private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
   constructor(private api: ApiService) {}
 
@@ -33,7 +33,10 @@ export class GatesComponent implements OnInit {
     this.loading = true;
     this.api.get<any[]>('/gates').subscribe({
       next: (data) => { this.gates = data; this.loading = false; },
-      error: (err) => { this.app.showToast('Error cargando puertas: ' + err.message, 'error'); this.loading = false; }
+      error: (err) => {
+        this.toast.showToast('Error cargando puertas: ' + err.message, 'error');
+        this.loading = false;
+      }
     });
   }
 
@@ -76,19 +79,22 @@ export class GatesComponent implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.app.showToast(this.editingGate.id ? 'Puerta actualizada' : 'Puerta creada', 'success');
+        this.toast.showToast(this.editingGate.id ? 'Puerta actualizada' : 'Puerta creada', 'success');
         this.closeModal();
         this.loadGates();
       },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
   deleteGate(id: number) {
     if (!confirm('¿Eliminar esta puerta?')) return;
     this.api.delete('/gates/' + id).subscribe({
-      next: () => { this.app.showToast('Puerta eliminada', 'success'); this.loadGates(); },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      next: () => {
+        this.toast.showToast('Puerta eliminada', 'success');
+        this.loadGates();
+      },
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 }

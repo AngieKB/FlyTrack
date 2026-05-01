@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { AppComponent } from '../../app.component';
+import { ToastService } from '../../services/toast.service';  // ← importación corregida
 
 @Component({
   standalone: true,
@@ -19,7 +19,7 @@ export class NotificationsComponent implements OnInit {
   type = 'DELAY';
   flightId: number | null = null;
 
-  private app = inject(AppComponent);
+  private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
   constructor(private api: ApiService) {}
 
@@ -31,7 +31,10 @@ export class NotificationsComponent implements OnInit {
     this.loading = true;
     this.api.get<any[]>('/notifications').subscribe({
       next: (data) => { this.notifications = data; this.loading = false; },
-      error: (err) => { this.app.showToast('Error cargando notificaciones: ' + err.message, 'error'); this.loading = false; }
+      error: (err) => {
+        this.toast.showToast('Error cargando notificaciones: ' + err.message, 'error');
+        this.loading = false;
+      }
     });
   }
 
@@ -45,26 +48,32 @@ export class NotificationsComponent implements OnInit {
 
     this.api.post('/notifications', body).subscribe({
       next: () => {
-        this.app.showToast('Notificación creada', 'success');
+        this.toast.showToast('Notificación creada', 'success');
         this.closeModal();
         this.loadNotifications();
       },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
   markRead(id: number) {
     this.api.patch('/notifications/' + id + '/read').subscribe({
-      next: () => { this.app.showToast('Marcado como leído', 'success'); this.loadNotifications(); },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      next: () => {
+        this.toast.showToast('Marcado como leído', 'success');
+        this.loadNotifications();
+      },
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
   deleteNotif(id: number) {
     if (!confirm('¿Eliminar esta notificación?')) return;
     this.api.delete('/notifications/' + id).subscribe({
-      next: () => { this.app.showToast('Notificación eliminada', 'success'); this.loadNotifications(); },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      next: () => {
+        this.toast.showToast('Notificación eliminada', 'success');
+        this.loadNotifications();
+      },
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 

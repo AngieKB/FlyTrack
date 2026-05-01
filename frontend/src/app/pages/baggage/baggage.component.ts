@@ -2,7 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { AppComponent } from '../../app.component';
+import { ToastService } from '../../services/toast.service';  // ← importación corregida
 
 @Component({
   standalone: true,
@@ -20,7 +20,7 @@ export class BaggageComponent implements OnInit {
   status = 'REPORTED';
   passengerId: number | null = null;
 
-  private app = inject(AppComponent);
+  private toast = inject(ToastService);  // ← inyecta ToastService
 
   constructor(private api: ApiService) {}
 
@@ -32,7 +32,10 @@ export class BaggageComponent implements OnInit {
     this.loading = true;
     this.api.get<any[]>('/baggage-reports').subscribe({
       next: (data) => { this.baggageReports = data; this.loading = false; },
-      error: (err) => { this.app.showToast('Error cargando reportes: ' + err.message, 'error'); this.loading = false; }
+      error: (err) => {
+        this.toast.showToast('Error cargando reportes: ' + err.message, 'error'); // ← corregido
+        this.loading = false;
+      }
     });
   }
 
@@ -46,26 +49,32 @@ export class BaggageComponent implements OnInit {
 
     this.api.post('/baggage-reports', body).subscribe({
       next: () => {
-        this.app.showToast('Reporte creado', 'success');
+        this.toast.showToast('Reporte creado', 'success');   // ← corregido
         this.closeModal();
         this.loadBaggage();
       },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')  // ← corregido
     });
   }
 
   updateStatus(id: number, status: string) {
     this.api.patch(`/baggage-reports/${id}/status/${status}`).subscribe({
-      next: () => { this.app.showToast('Estado actualizado', 'success'); this.loadBaggage(); },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      next: () => {
+        this.toast.showToast('Estado actualizado', 'success');
+        this.loadBaggage();
+      },
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
   deleteBaggage(id: number) {
     if (!confirm('¿Eliminar este reporte?')) return;
     this.api.delete('/baggage-reports/' + id).subscribe({
-      next: () => { this.app.showToast('Reporte eliminado', 'success'); this.loadBaggage(); },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      next: () => {
+        this.toast.showToast('Reporte eliminado', 'success');
+        this.loadBaggage();
+      },
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 

@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../services/api.service';
-import { AppComponent } from '../../app.component'; // Para usar el toast
+import { ToastService } from '../../services/toast.service';
 import { inject } from '@angular/core';
 
 @Component({
@@ -29,7 +29,7 @@ export class FlightsComponent implements OnInit {
   status = 'SCHEDULED';
   gateId: number | null = null;
 
-  private app = inject(AppComponent);
+  private toast = inject(ToastService);  // ← cambia AppComponent por ToastService
 
   constructor(private api: ApiService) {}
 
@@ -53,7 +53,7 @@ export class FlightsComponent implements OnInit {
         this.loading = false;
       },
       error: (err) => {
-        this.app.showToast('Error cargando vuelos: ' + err.message, 'error');
+        this.toast.showToast('Error cargando vuelos: ' + err.message, 'error');
         this.loading = false;
       }
     });
@@ -113,11 +113,11 @@ export class FlightsComponent implements OnInit {
 
     request.subscribe({
       next: () => {
-        this.app.showToast(this.editingFlight.id ? 'Vuelo actualizado' : 'Vuelo creado', 'success');
+        this.toast.showToast(this.editingFlight.id ? 'Vuelo actualizado' : 'Vuelo creado', 'success');
         this.closeModal();
         this.loadFlights();
       },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
@@ -125,10 +125,10 @@ export class FlightsComponent implements OnInit {
     if (!confirm('¿Eliminar este vuelo?')) return;
     this.api.delete('/flights/' + id).subscribe({
       next: () => {
-        this.app.showToast('Vuelo eliminado', 'success');
+        this.toast.showToast('Vuelo eliminado', 'success');
         this.loadFlights();
       },
-      error: (err) => this.app.showToast('Error: ' + err.message, 'error')
+      error: (err) => this.toast.showToast('Error: ' + err.message, 'error')
     });
   }
 
