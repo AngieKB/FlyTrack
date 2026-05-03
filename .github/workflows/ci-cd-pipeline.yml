@@ -64,14 +64,15 @@ jobs:
       checks: write
       pull-requests: read
 
+    # ¡AQUÍ ESTÁN LOS CAMBIOS PARA MYSQL!
     services:
-      mariadb:
-        image: mariadb:11.4
+      mysql:
+        image: mysql:8.0
         env:
-          MARIADB_ROOT_PASSWORD: root123
-          MARIADB_DATABASE: flytrack_db
+          MYSQL_ROOT_PASSWORD: root123
+          MYSQL_DATABASE: flytrack_db
         options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot123"
           --health-interval=10s
           --health-timeout=10s
           --health-retries=5
@@ -80,7 +81,8 @@ jobs:
 
     env:
       SPRING_PROFILES_ACTIVE: test
-      SPRING_DATASOURCE_URL: jdbc:mariadb://localhost:3306/flytrack_db
+      # ¡ACTUALIZAMOS LA URL AL DRIVER DE MYSQL!
+      SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/flytrack_db
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root123
 
@@ -98,25 +100,25 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./Backend/gradlew
 
-      - name: Wait for MariaDB to be ready
+      # ¡ACTUALIZAMOS LOS MENSAJES PARA EVITAR CONFUSIONES!
+      - name: Wait for MySQL to be ready
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y netcat-openbsd > /dev/null 2>&1
           
-          echo "Waiting for MariaDB to be ready..."
+          echo "Waiting for MySQL to be ready..."
           for i in {1..60}; do
             if nc -z localhost 3306 > /dev/null 2>&1; then
-              echo "✅ MariaDB is ready on port 3306"
+              echo "✅ MySQL is ready on port 3306"
               sleep 2
               break
             fi
-            echo "Waiting for MariaDB... ($i/60)"
+            echo "Waiting for MySQL... ($i/60)"
             sleep 1
           done
           
-          # Verify connection
           if ! nc -z localhost 3306; then
-            echo "❌ MariaDB failed to start - port not responding"
+            echo "❌ MySQL failed to start - port not responding"
             exit 1
           fi
 
@@ -139,35 +141,6 @@ jobs:
           name: Test Results
           path: 'Backend/build/test-results/**/*.xml'
           reporter: 'java-junit'
-
-  # ============================================
-  # ETAPA 3: Análisis de Calidad de Código (SonarQube)
-  # ============================================
-  # NOTA: Esta etapa está comentada. Se activa cuando tengamos SonarQube configurado
-  # quality-analysis:
-  #   runs-on: ubuntu-latest
-  #   name: Code Quality Analysis (SonarQube)
-  #   needs: test
-  #
-  #   steps:
-  #     - name: Checkout code
-  #       uses: actions/checkout@v4
-  #
-  #     - name: Set up JDK 21
-  #       uses: actions/setup-java@v4
-  #       with:
-  #         java-version: '21'
-  #         distribution: 'temurin'
-  #
-  #     - name: Run SonarQube analysis
-  #       run: |
-  #         cd Backend
-  #         ./gradlew sonarqube \
-  #           -Dsonar.projectKey=FlyTrack \
-  #           -Dsonar.sources=src/main/java \
-  #           -Dsonar.tests=src/test/java \
-  #           -Dsonar.host.url=https://your-sonarqube-instance \
-  #           -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
 
   # ============================================
   # ETAPA 4: Build de imagen Docker
@@ -234,8 +207,6 @@ jobs:
           echo "🚀 Desplegando a STAGING"
           echo "Rama: tests"
           echo "Imagen: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tests"
-          # TODO: Aquí irían los comandos reales de despliegue, nos falta implementarlo
-          # Ejemplo: docker pull, docker run, kubectl apply, etc.
           echo "Despliegue a staging completado"
 
       - name: Notify Staging Deployment
@@ -264,15 +235,12 @@ jobs:
       - name: Request Manual Approval (Optional)
         run: |
           echo "Esperando aprobación para despliegue a producción..."
-          echo "Este paso puede automatizarse o requerir aprobación manual en GitHub"
 
       - name: Deploy to Production
         run: |
           echo "Desplegando a PRODUCCIÓN"
           echo "Rama: main"
           echo "Imagen: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
-          # TODO: Aquí irían los comandos reales de despliegue
-          # Ejemplo: docker pull, docker run, kubectl apply, etc.
           echo "Despliegue a producción completado"
 
       - name: Notify Production Deployment
@@ -280,7 +248,6 @@ jobs:
           echo "Aplicación desplegada en PRODUCCIÓN"
           echo "Commit: ${{ github.sha }}"
           echo "Autor: ${{ github.actor }}"
-          echo "URL: https://flytrack-prod.example.com"
 
   # ============================================
   # NOTIFICACIONES
@@ -298,4 +265,3 @@ jobs:
           echo "Workflow: ${{ github.workflow }}"
           echo "Rama: ${{ github.ref }}"
           echo "Commit: ${{ github.sha }}"
-
