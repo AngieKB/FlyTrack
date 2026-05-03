@@ -22,15 +22,13 @@ services:
       - flytrack-network
 
   flytrack-app-staging:
-    image: ghcr.io/${GITHUB_REPOSITORY}:tests
+    image: ${APP_IMAGE:-ghcr.io/angiekb/flytrack:tests}
     container_name: flytrack-app-staging
     depends_on:
       mysql-staging:
         condition: service_healthy
     environment:
-      # Conecta con mysql-staging en lugar de mariadb-staging
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql-staging:3306/${DB_NAME:-flytrack_db}
-      # Usa los valores por defecto que coinciden con nuestro .env
       SPRING_DATASOURCE_USERNAME: ${DB_USER:-flytrack}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-flytrack123}
       SPRING_PROFILES_ACTIVE: staging
@@ -46,7 +44,7 @@ services:
       interval: 10s
 
 volumes:
-  mysql-data-staging: # Renombrado para no dejar rastros de mariadb
+  mysql-data-staging:
 
 networks:
   flytrack-network:

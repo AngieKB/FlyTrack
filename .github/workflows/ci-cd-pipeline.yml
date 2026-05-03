@@ -142,7 +142,7 @@ jobs:
           reporter: 'java-junit'
 
   # ============================================
-  # ETAPA 4: Build de imagen Docker
+  # ETAPA 4: Build de imagen Docker → GHCR
   # ============================================
   docker-build:
     runs-on: ubuntu-latest
@@ -161,10 +161,10 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Container Registry
+      - name: Log in to GHCR
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
@@ -172,18 +172,15 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ghcr.io/${{ github.repository }}
           tags: |
             type=ref,event=branch
-            type=semver,pattern={{version}}
             type=sha,prefix={{branch}}-
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
         with:
-          # CAMBIO CLAVE 1: El contexto ahora es la raíz (.)
           context: .
-          # CAMBIO CLAVE 2: Especificamos dónde está el Dockerfile
           file: backend/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
@@ -196,26 +193,43 @@ jobs:
   # ============================================
   deploy-staging:
     runs-on: ubuntu-latest
-    name: Deploy to Staging
+    name: Deploy to Staging (EC2)
     needs: docker-build
     if: github.ref == 'refs/heads/tests' && github.event_name == 'push'
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Login a GHCR
+            echo "${{ secrets.GHCR_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Deploy to Staging
-        run: |
-          echo "🚀 Desplegando a STAGING"
-          echo "Rama: tests"
-          echo "Imagen: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:tests"
-          echo "Despliegue a staging completado"
+            cd /home/ec2-user/flytrack
+
+            export APP_IMAGE=ghcr.io/${{ github.repository }}:tests
+            export DB_PASSWORD=flytrack123
+            export DB_ROOT_PASSWORD=admin123
+            export DB_NAME=flytrack_db
+            export DB_USER=flytrack
+
+            docker-compose -f docker-compose.staging.yml pull
+            docker-compose -f docker-compose.staging.yml down --remove-orphans
+            docker-compose -f docker-compose.staging.yml up -d
+
+            sleep 15
+            docker-compose -f docker-compose.staging.yml ps
 
       - name: Notify Staging Deployment
         run: |
-          echo "Aplicación desplegada en STAGING"
-          echo "Commit: ${{ github.sha }}"
-          echo "Autor: ${{ github.actor }}"
+          echo "✅ Staging desplegado exitosamente"
+          echo "🌐 URL: http://${{ secrets.EC2_HOST }}:8080"
+          echo "📦 Imagen: ghcr.io/${{ github.repository }}:tests"
+          echo "👤 Autor: ${{ github.actor }}"
 
   # ============================================
   # ETAPA 6: Despliegue a PRODUCCIÓN (rama: main)
