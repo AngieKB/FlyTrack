@@ -277,7 +277,7 @@ jobs:
           echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
-  # NOTIFICACIONES --se agrego un commit de prueba--
+  # NOTIFICACIONES
   # ============================================
   notify-failure:
     runs-on: ubuntu-latest
