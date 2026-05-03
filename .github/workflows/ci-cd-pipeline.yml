@@ -195,7 +195,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy to Staging (EC2)
     needs: docker-build
-    if: github.ref == 'refs/heads/tests' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/tests' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
 
     steps:
       - name: Deploy to EC2 via SSH
