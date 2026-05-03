@@ -266,7 +266,7 @@ jobs:
           echo "Autor: ${{ github.actor }}"
 
   # ============================================
-  # NOTIFICACIONES
+  # NOTIFICACIONES --se agrego un commit de prueba--
   # ============================================
   notify-failure:
     runs-on: ubuntu-latest
