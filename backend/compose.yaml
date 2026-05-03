@@ -1,15 +1,14 @@
 services:
-  mariadb:
-    image: 'mariadb:latest'
-    command: --plugin-load-add=auth_gssapi=OFF --default-authentication-plugin=mysql_native_password
+  mysql:
+    image: 'mysql:8.0' # Es mejor usar una versión específica (8.0) que 'latest' para evitar que se rompa en el futuro
     environment:
-      - 'MARIADB_DATABASE=flytrack_db'
-      - 'MARIADB_ROOT_PASSWORD=rootpassword'
-      - 'MARIADB_USER=flytrack'
-      - 'MARIADB_PASSWORD=flytrack123'
+      - 'MYSQL_DATABASE=flytrack_db'
+      - 'MYSQL_ROOT_PASSWORD=admin123' # Alineado con tu properties
+      - 'MYSQL_USER=flytrack'          # Usuario extra opcional
+      - 'MYSQL_PASSWORD=flytrack123'   # Contraseña del usuario extra
     ports:
-      - '3307:3306'
+      - '3306:3306' # Lo cambié de 3307 a 3306 para que encaje con tu properties
     healthcheck:
-      test: ['CMD', 'healthcheck.sh', '--connect', '--innodb_initialized']
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"] # Comando específico de MySQL
       timeout: 20s
       retries: 10

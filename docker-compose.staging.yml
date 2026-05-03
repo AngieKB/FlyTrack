@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql-staging:
+    image: mysql:8.0
+    container_name: flytrack-mysql-staging
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-admin123}
+      MYSQL_DATABASE: ${DB_NAME:-flytrack_db}
+      MYSQL_USER: ${DB_USER:-flytrack}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-flytrack123}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mysql-data-staging:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+      interval: 10s
+    networks:
+      - flytrack-network
+
+  flytrack-app-staging:
+    image: ghcr.io/${GITHUB_REPOSITORY}:tests
+    container_name: flytrack-app-staging
+    depends_on:
+      mysql-staging:
+        condition: service_healthy
+    environment:
+      # Conecta con mysql-staging en lugar de mariadb-staging
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql-staging:3306/${DB_NAME:-flytrack_db}
+      # Usa los valores por defecto que coinciden con nuestro .env
+      SPRING_DATASOURCE_USERNAME: ${DB_USER:-flytrack}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:-flytrack123}
+      SPRING_PROFILES_ACTIVE: staging
+    ports:
+      - "8080:8080"
+    networks:
+      - flytrack-network
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'wget', '--quiet', '--tries=1', '--spider', 'http://localhost:8080/actuator/health']
+      timeout: 10s
+      retries: 5
+      interval: 10s
+
+volumes:
+  mysql-data-staging: # Renombrado para no dejar rastros de mariadb
+
+networks:
+  flytrack-network:
+    driver: bridge
