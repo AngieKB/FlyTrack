@@ -236,34 +236,45 @@ jobs:
   # ============================================
   deploy-production:
     runs-on: ubuntu-latest
-    name: Deploy to Production
+    name: Deploy to Production (EC2)
     needs: docker-build
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
 
     environment:
       name: production
-      url: https://flytrack-prod.example.com
+      url: http://${{ secrets.EC2_HOST_PROD }}:8080
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Deploy to Production EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST_PROD }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          script: |
+            echo "${{ secrets.GHCR_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-      - name: Request Manual Approval (Optional)
-        run: |
-          echo "Esperando aprobación para despliegue a producción..."
+            cd /home/ec2-user/flytrack
 
-      - name: Deploy to Production
-        run: |
-          echo "Desplegando a PRODUCCIÓN"
-          echo "Rama: main"
-          echo "Imagen: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:main"
-          echo "Despliegue a producción completado"
+            export DB_PASSWORD=flytrack123
+            export DB_ROOT_PASSWORD=admin123
+            export DB_NAME=flytrack_db
+            export DB_USER=flytrack
+
+            docker-compose -f docker-compose.prod.yml pull
+            docker-compose -f docker-compose.prod.yml down --remove-orphans
+            docker-compose -f docker-compose.prod.yml up -d
+
+            sleep 15
+            docker-compose -f docker-compose.prod.yml ps
 
       - name: Notify Production Deployment
         run: |
-          echo "Aplicación desplegada en PRODUCCIÓN"
-          echo "Commit: ${{ github.sha }}"
-          echo "Autor: ${{ github.actor }}"
+          echo "✅ Producción desplegada exitosamente"
+          echo "🌐 URL: http://${{ secrets.EC2_HOST_PROD }}:8080"
+          echo "👤 Autor: ${{ github.actor }}"
+          echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
   # NOTIFICACIONES --se agrego un commit de prueba--
