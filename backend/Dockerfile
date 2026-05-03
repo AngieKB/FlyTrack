@@ -3,22 +3,31 @@ FROM gradle:8.8-jdk21 AS builder
 
 WORKDIR /app
 
-# Copiar archivos de configuración de Gradle
-COPY build.gradle ./
-# Eliminamos settings.gradle y los archivos de gradle wrapper de aquí
-# porque ahora Docker los tomará desde la raíz del proyecto
-COPY src ./src
+# 1. Copiamos el archivo de configuración global de la raíz
+COPY settings.gradle ./
 
-# Compilar y generar el JAR
-RUN chmod +x ./gradlew && ./gradlew build -x test --no-daemon
+# 2. Copiamos el ejecutable de Gradle y su carpeta interna desde la raíz
+COPY gradlew ./
+COPY gradle ./gradle
+
+# 3. Copiamos los archivos específicos del módulo backend
+# Usamos el prefijo "backend/" porque el contexto de Docker es la raíz del proyecto
+COPY backend/build.gradle ./backend/
+COPY backend/src ./backend/src
+
+# 4. Damos permisos y compilamos apuntando al proyecto backend
+RUN chmod +x ./gradlew
+# Ejecutamos el build específicamente para el proyecto backend
+RUN ./gradlew :backend:build -x test --no-daemon
 
 # Stage 2: Runtime
 FROM eclipse-temurin:21-jre-alpine
 
 WORKDIR /app
 
-# Copiar el JAR desde la etapa de build
-COPY --from=builder /app/build/libs/*.jar app.jar
+# 5. Copiamos el JAR generado.
+# Nota: La ruta de salida suele ser backend/build/libs/ si se compila desde la raíz
+COPY --from=builder /app/backend/build/libs/*.jar app.jar
 
 # Exponer el puerto
 EXPOSE 8080
