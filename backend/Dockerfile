@@ -4,8 +4,9 @@ FROM gradle:8.8-jdk21 AS builder
 WORKDIR /app
 
 # Copiar archivos de configuración de Gradle
-COPY build.gradle settings.gradle gradlew gradlew.bat ./
-COPY gradle ./gradle
+COPY build.gradle ./
+# Eliminamos settings.gradle y los archivos de gradle wrapper de aquí
+# porque ahora Docker los tomará desde la raíz del proyecto
 COPY src ./src
 
 # Compilar y generar el JAR
