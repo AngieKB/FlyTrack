@@ -9,6 +9,7 @@ on:
     branches:
       - tests
       - main
+      - despliegue
 
 env:
   REGISTRY: ghcr.io
