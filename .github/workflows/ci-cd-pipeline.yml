@@ -360,7 +360,7 @@ jobs:
           echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
-  # NOTIFICACIONES
+  # NOTIFICACIONES --
   # ============================================
   notify-failure:
     runs-on: ubuntu-latest
