@@ -115,9 +115,7 @@ jobs:
             echo "Waiting for MySQL... ($i/60)"
             sleep 1
           done
-          
 
-          # Verify connection
           if ! nc -z localhost 3306; then
             echo "❌ MySQL failed to start - port not responding"
             exit 1
@@ -291,23 +289,28 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 15m
           script: |
+            # Login a GHCR
             echo "${{ secrets.GHCR_TOKEN }}" | \
               docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            # Pre-descargar imágenes en paralelo para ahorrar tiempo
+            docker pull ghcr.io/angiekb/flytrack:despliegue &
+            docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
+            wait
+            echo "✅ Imágenes descargadas"
+
             cd /home/ec2-user/flytrack
 
-            export APP_IMAGE=ghcr.io/${{ github.repository }}:tests
-            export DB_PASSWORD=flytrack123
-            export DB_ROOT_PASSWORD=admin123
-            export DB_NAME=flytrack_db
-            export DB_USER=flytrack
-
-            docker-compose -f docker-compose.staging.yml pull
+            # Bajar contenedores actuales
             docker-compose -f docker-compose.staging.yml down --remove-orphans
+
+            # Levantar con imágenes ya descargadas
             docker-compose -f docker-compose.staging.yml up -d
 
-            sleep 15
+            # Esperar que levanten
+            sleep 20
             docker-compose -f docker-compose.staging.yml ps
 
       - name: Notify Staging Deployment
@@ -337,22 +340,28 @@ jobs:
           host: ${{ secrets.EC2_HOST_PROD }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          command_timeout: 15m
           script: |
+            # Login a GHCR
             echo "${{ secrets.GHCR_TOKEN }}" | \
               docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
+            # Pre-descargar imágenes en paralelo
+            docker pull ghcr.io/angiekb/flytrack:despliegue &
+            docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
+            wait
+            echo "✅ Imágenes descargadas"
+
             cd /home/ec2-user/flytrack
 
-            export DB_PASSWORD=flytrack123
-            export DB_ROOT_PASSWORD=admin123
-            export DB_NAME=flytrack_db
-            export DB_USER=flytrack
-
-            docker-compose -f docker-compose.prod.yml pull
+            # Bajar contenedores actuales
             docker-compose -f docker-compose.prod.yml down --remove-orphans
+
+            # Levantar con imágenes ya descargadas
             docker-compose -f docker-compose.prod.yml up -d
 
-            sleep 15
+            # Esperar que levanten
+            sleep 20
             docker-compose -f docker-compose.prod.yml ps
 
       - name: Notify Production Deployment
