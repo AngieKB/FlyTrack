@@ -68,8 +68,6 @@
               ],
               "optimization": true,
               "outputHashing": "all",
-              "ssr": false,
-              "outputMode": "static"
             },
             "development": {
               "fileReplacements": [
