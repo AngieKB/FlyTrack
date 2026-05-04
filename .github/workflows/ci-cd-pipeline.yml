@@ -317,47 +317,47 @@ jobs:
   # ============================================
   # ETAPA 6: Despliegue a PRODUCCIÓN
   # ============================================
-  deploy-production:
-    runs-on: ubuntu-latest
-    name: Deploy to Production (EC2)
-    needs: [docker-build, docker-build-frontend,deploy-staging]
-    if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
+  #deploy-production:
+   # runs-on: ubuntu-latest
+    #name: Deploy to Production (EC2)
+    #needs: [docker-build, docker-build-frontend,deploy-staging]
+    #if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
 
-    environment:
-      name: production
-      url: http://18.220.140.37:8080
+    #environment:
+     # name: production
+      #url: http://18.220.140.37:8080
 
-    steps:
-      - name: Deploy to Production EC2
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST_PROD }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY_PROD }}
-          command_timeout: 15m
-          script: |
-            echo "${{ secrets.GHCR_TOKEN }}" | \
-              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    #steps:
+     # - name: Deploy to Production EC2
+      #  uses: appleboy/ssh-action@v1
+       # with:
+        #host: ${{ secrets.EC2_HOST_PROD }}
+         # username: ec2-user
+          #key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          #command_timeout: 15m
+          #script: |
+           # echo "${{ secrets.GHCR_TOKEN }}" | \
+            #  docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker pull ghcr.io/angiekb/flytrack:despliegue &
-            docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
-            wait
-            echo "✅ Imágenes descargadas"
+            #docker pull ghcr.io/angiekb/flytrack:despliegue &
+            #docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
+            #wait
+            #echo "✅ Imágenes descargadas"
 
-            cd /home/ec2-user/flytrack
-            docker-compose -f docker-compose.prod.yml down --remove-orphans
-            docker-compose -f docker-compose.prod.yml up -d
+            #cd /home/ec2-user/flytrack
+            #docker-compose -f docker-compose.prod.yml down --remove-orphans
+            #docker-compose -f docker-compose.prod.yml up -d
 
-            sleep 20
-            docker-compose -f docker-compose.prod.yml ps
+            #sleep 20
+            #docker-compose -f docker-compose.prod.yml ps
 
-      - name: Notify Production Deployment
-        run: |
-          echo "✅ Producción desplegada exitosamente"
-          echo "🌐 Backend: http://18.220.140.37:8080"
-          echo "🌐 Frontend: http://18.220.140.37:4200"
-          echo "👤 Autor: ${{ github.actor }}"
-          echo "🔖 Commit: ${{ github.sha }}"
+      #- name: Notify Production Deployment
+       # run: |
+        #  echo "✅ Producción desplegada exitosamente"
+         # echo "🌐 Backend: http://18.220.140.37:8080"
+          #echo "🌐 Frontend: http://18.220.140.37:4200"
+          #echo "👤 Autor: ${{ github.actor }}"
+          #echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
   # NOTIFICACIONES --
@@ -366,7 +366,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Notify on Failure
     if: failure()
-    needs: [build, test, quality-analysis, docker-build, docker-build-frontend]
+    needs: [build, test,deploy-staging, quality-analysis, docker-build, docker-build-frontend]
 
     steps:
       - name: Send failure notification
