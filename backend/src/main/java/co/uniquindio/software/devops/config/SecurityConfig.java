@@ -17,15 +17,14 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // El .cors() sin parámetros busca un bean llamado 'corsConfigurationSource'
-                // (que es justamente el que tienes abajo).
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
                         .anyRequest().authenticated()
                 )
-                .httpBasic(Customizer.withDefaults()); // Mejor usar basic auth para pruebas que formLogin
+                .httpBasic(Customizer.withDefaults());
 
         return http.build();
     }
