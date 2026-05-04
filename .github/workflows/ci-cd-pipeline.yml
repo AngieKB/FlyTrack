@@ -36,17 +36,13 @@ jobs:
           cache: gradle
 
       - name: Make gradlew executable
-        run: chmod +x ./backend/gradlew
+        run: chmod +x ./gradlew
 
       - name: Compile project
-        run: |
-          cd backend
-          ./gradlew clean compileJava --no-daemon
+        run: ./gradlew :backend:compileJava --no-daemon
 
       - name: Build project
-        run: |
-          cd backend
-          ./gradlew build -x test --no-daemon
+        run: ./gradlew :backend:build -x test --no-daemon
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -98,13 +94,13 @@ jobs:
           cache: gradle
 
       - name: Make gradlew executable
-        run: chmod +x ./backend/gradlew
+        run: chmod +x ./gradlew
 
       - name: Wait for MySQL to be ready
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y netcat-openbsd > /dev/null 2>&1
-          
+
           echo "Waiting for MySQL to be ready..."
           for i in {1..60}; do
             if nc -z localhost 3306 > /dev/null 2>&1; then
@@ -122,9 +118,7 @@ jobs:
           fi
 
       - name: Run tests
-        run: |
-          cd backend
-          ./gradlew test --no-daemon -Dspring.profiles.active=test
+        run: ./gradlew :backend:test --no-daemon -Dspring.profiles.active=test
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
@@ -163,24 +157,21 @@ jobs:
           cache: gradle
 
       - name: Make gradlew executable
-        run: chmod +x ./backend/gradlew
+        run: chmod +x ./gradlew
 
       - name: Build for analysis
-        run: |
-          cd backend
-          ./gradlew build -x test --no-daemon
+        run: ./gradlew :backend:build -x test --no-daemon
 
       - name: Run SonarCloud analysis
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd backend
-          ./gradlew sonar \
+          ./gradlew :backend:sonar \
             -Dsonar.projectKey=angie_FlyTrack \
             -Dsonar.organization=angiekb \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml \
+            -Dsonar.coverage.jacoco.xmlReportPaths=backend/build/reports/jacoco/test/jacocoTestReport.xml \
             --no-daemon
 
   # ============================================
@@ -188,7 +179,7 @@ jobs:
   # ============================================
   docker-build:
     runs-on: ubuntu-latest
-    name: Build Docker Image
+    name: Build Docker Image (Backend)
     needs: [test, quality-analysis]
     if: github.event_name == 'push'
 
@@ -210,14 +201,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ghcr.io/${{ github.repository }}
-          tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
+      - name: Set repository name lowercase
+        id: repo
+        run: echo "name=$(echo ghcr.io/${{ github.repository }} | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -225,8 +211,9 @@ jobs:
           context: .
           file: backend/Dockerfile
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+          tags: |
+            ${{ steps.repo.outputs.name }}:${{ github.ref_name }}
+            ${{ steps.repo.outputs.name }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -235,7 +222,7 @@ jobs:
   # ============================================
   docker-build-frontend:
     runs-on: ubuntu-latest
-    name: Build Frontend Docker Image
+    name: Build Docker Image (Frontend)
     needs: [test, quality-analysis]
     if: github.event_name == 'push'
 
@@ -261,6 +248,32 @@ jobs:
         id: repo
         run: echo "name=$(echo ghcr.io/${{ github.repository }}-frontend | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
+      # Paso clave: determinar BUILD_ENV y API_URL según la rama
+      # Se hace en un paso separado con if/elif para evitar ternarias anidadas
+      # que causan que las IPs se confundan entre staging y prod
+      - name: Determine build environment and API URL
+        id: build_args
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "build_env=production" >> $GITHUB_OUTPUT
+            echo "api_url=http://${{ secrets.EC2_HOST_PROD }}:8080/api" >> $GITHUB_OUTPUT
+            echo "image_tag=main" >> $GITHUB_OUTPUT
+            echo "🏭 Entorno: PRODUCCIÓN"
+            echo "🌐 API URL: http://${{ secrets.EC2_HOST_PROD }}:8080/api"
+          elif [[ "${{ github.ref }}" == "refs/heads/despliegue" ]]; then
+            echo "build_env=staging" >> $GITHUB_OUTPUT
+            echo "api_url=http://${{ secrets.EC2_HOST }}:8080/api" >> $GITHUB_OUTPUT
+            echo "image_tag=despliegue" >> $GITHUB_OUTPUT
+            echo "🧪 Entorno: STAGING"
+            echo "🌐 API URL: http://${{ secrets.EC2_HOST }}:8080/api"
+          else
+            echo "build_env=staging" >> $GITHUB_OUTPUT
+            echo "api_url=http://${{ secrets.EC2_HOST }}:8080/api" >> $GITHUB_OUTPUT
+            echo "image_tag=tests" >> $GITHUB_OUTPUT
+            echo "🧪 Entorno: STAGING (rama tests)"
+            echo "🌐 API URL: http://${{ secrets.EC2_HOST }}:8080/api"
+          fi
+
       - name: Build and push Frontend image
         uses: docker/build-push-action@v5
         with:
@@ -268,11 +281,13 @@ jobs:
           file: frontend/Dockerfile
           push: true
           build-args: |
-            BUILD_ENV=${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && 'production' || 'staging' }}
-            API_URL=${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && format('http://{0}:8080/api', secrets.EC2_HOST_PROD) || format('http://{0}:8080/api', secrets.EC2_HOST) }}
-          tags: ${{ steps.repo.outputs.name }}:${{ github.ref_name }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            BUILD_ENV=${{ steps.build_args.outputs.build_env }}
+            API_URL=${{ steps.build_args.outputs.api_url }}
+          tags: |
+            ${{ steps.repo.outputs.name }}:${{ steps.build_args.outputs.image_tag }}
+            ${{ steps.repo.outputs.name }}:latest
+          # Sin cache para el frontend para evitar que quede una IP vieja cacheada
+          no-cache: true
 
   # ============================================
   # ETAPA 5: Despliegue a STAGING
@@ -284,6 +299,18 @@ jobs:
     if: (github.ref == 'refs/heads/tests' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
 
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Copy docker-compose.staging.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "docker-compose.staging.yml"
+          target: "/home/ec2-user/flytrack/"
+
       - name: Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -292,86 +319,129 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 15m
           script: |
+            # Login en GHCR
             echo "${{ secrets.GHCR_TOKEN }}" | \
               docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            docker pull ghcr.io/angiekb/flytrack:despliegue &
-            docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
+            # Pull con el tag exacto de la rama
+            BRANCH_TAG="${{ github.ref_name }}"
+            echo "📦 Descargando imágenes con tag: ${BRANCH_TAG}"
+            docker pull ghcr.io/angiekb/flytrack:${BRANCH_TAG} &
+            docker pull ghcr.io/angiekb/flytrack-frontend:${BRANCH_TAG} &
             wait
             echo "✅ Imágenes descargadas"
 
             cd /home/ec2-user/flytrack
+
             docker-compose -f docker-compose.staging.yml down --remove-orphans
             docker-compose -f docker-compose.staging.yml up -d
 
-            sleep 20
+            # Esperar que el backend esté listo (hasta 2 minutos)
+            echo "⏳ Esperando que el backend esté listo..."
+            for i in {1..24}; do
+              if wget --quiet --tries=1 --spider http://localhost:8080/actuator/health 2>/dev/null; then
+                echo "✅ Backend listo"
+                break
+              fi
+              echo "Esperando backend... ($i/24)"
+              sleep 5
+            done
+
             docker-compose -f docker-compose.staging.yml ps
 
       - name: Notify Staging Deployment
         run: |
           echo "✅ Staging desplegado exitosamente"
-          echo "🌐 Backend: http://${{ secrets.EC2_HOST }}:8080"
+          echo "🌐 Backend:  http://${{ secrets.EC2_HOST }}:8080"
           echo "🌐 Frontend: http://${{ secrets.EC2_HOST }}:4200"
           echo "👤 Autor: ${{ github.actor }}"
+          echo "🔖 Rama: ${{ github.ref_name }}"
+          echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
   # ETAPA 6: Despliegue a PRODUCCIÓN
   # ============================================
-  #deploy-production:
-   # runs-on: ubuntu-latest
-    #name: Deploy to Production (EC2)
-    #needs: [docker-build, docker-build-frontend,deploy-staging]
-    #if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
+  deploy-production:
+    runs-on: ubuntu-latest
+    name: Deploy to Production (EC2)
+    needs: [docker-build, docker-build-frontend, deploy-staging]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-    #environment:
-     # name: production
-      #url: http://18.220.140.37:8080
+    environment:
+      name: production
+      url: http://${{ secrets.EC2_HOST_PROD }}:8080
 
-    #steps:
-     # - name: Deploy to Production EC2
-      #  uses: appleboy/ssh-action@v1
-       # with:
-        #host: ${{ secrets.EC2_HOST_PROD }}
-         # username: ec2-user
-          #key: ${{ secrets.EC2_SSH_KEY_PROD }}
-          #command_timeout: 15m
-          #script: |
-           # echo "${{ secrets.GHCR_TOKEN }}" | \
-            #  docker login ghcr.io -u ${{ github.actor }} --password-stdin
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-            #docker pull ghcr.io/angiekb/flytrack:despliegue &
-            #docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
-            #wait
-            #echo "✅ Imágenes descargadas"
+      - name: Copy docker-compose.prod.yml to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST_PROD }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          source: "docker-compose.prod.yml"
+          target: "/home/ec2-user/flytrack/"
 
-            #cd /home/ec2-user/flytrack
-            #docker-compose -f docker-compose.prod.yml down --remove-orphans
-            #docker-compose -f docker-compose.prod.yml up -d
+      - name: Deploy to Production EC2
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.EC2_HOST_PROD }}
+          username: ec2-user
+          key: ${{ secrets.EC2_SSH_KEY_PROD }}
+          command_timeout: 15m
+          script: |
+            echo "${{ secrets.GHCR_TOKEN }}" | \
+              docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            #sleep 20
-            #docker-compose -f docker-compose.prod.yml ps
+            BRANCH_TAG="${{ github.ref_name }}"
+            echo "📦 Descargando imágenes con tag: ${BRANCH_TAG}"
+            docker pull ghcr.io/angiekb/flytrack:${BRANCH_TAG} &
+            docker pull ghcr.io/angiekb/flytrack-frontend:${BRANCH_TAG} &
+            wait
+            echo "✅ Imágenes descargadas"
 
-      #- name: Notify Production Deployment
-       # run: |
-        #  echo "✅ Producción desplegada exitosamente"
-         # echo "🌐 Backend: http://18.220.140.37:8080"
-          #echo "🌐 Frontend: http://18.220.140.37:4200"
-          #echo "👤 Autor: ${{ github.actor }}"
-          #echo "🔖 Commit: ${{ github.sha }}"
+            cd /home/ec2-user/flytrack
+
+            docker-compose -f docker-compose.prod.yml down --remove-orphans
+            docker-compose -f docker-compose.prod.yml up -d
+
+            echo "⏳ Esperando que el backend esté listo..."
+            for i in {1..24}; do
+              if wget --quiet --tries=1 --spider http://localhost:8080/actuator/health 2>/dev/null; then
+                echo "✅ Backend listo"
+                break
+              fi
+              echo "Esperando backend... ($i/24)"
+              sleep 5
+            done
+
+            docker-compose -f docker-compose.prod.yml ps
+
+      - name: Notify Production Deployment
+        run: |
+          echo "✅ Producción desplegada exitosamente"
+          echo "🌐 Backend:  http://${{ secrets.EC2_HOST_PROD }}:8080"
+          echo "🌐 Frontend: http://${{ secrets.EC2_HOST_PROD }}:4200"
+          echo "👤 Autor: ${{ github.actor }}"
+          echo "🔖 Rama: ${{ github.ref_name }}"
+          echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
-  # NOTIFICACIONES --
+  # NOTIFICACIONES
   # ============================================
   notify-failure:
     runs-on: ubuntu-latest
     name: Notify on Failure
     if: failure()
-    needs: [build, test,deploy-staging, quality-analysis, docker-build, docker-build-frontend]
+    needs: [build, test, quality-analysis, docker-build, docker-build-frontend, deploy-staging, deploy-production]
 
     steps:
       - name: Send failure notification
         run: |
-          echo "El pipeline ha fallado"
-          echo "Workflow: ${{ github.workflow }}"
-          echo "Rama: ${{ github.ref }}"
-          echo "Commit: ${{ github.sha }}"
+          echo "❌ El pipeline ha fallado"
+          echo "Workflow:  ${{ github.workflow }}"
+          echo "Rama:      ${{ github.ref_name }}"
+          echo "Commit:    ${{ github.sha }}"
+          echo "Autor:     ${{ github.actor }}"

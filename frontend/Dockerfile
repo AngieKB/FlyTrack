@@ -13,9 +13,15 @@ ARG BUILD_ENV=production
 ARG API_URL=http://localhost:8080/api
 
 # Sobrescribir environments con la URL inyectada desde GitHub Actions
-RUN echo "export const environment = { production: false, apiUrl: '${API_URL}' };" > src/environments/environment.ts && \
-    echo "export const environment = { production: false, apiUrl: '${API_URL}' };" > src/environments/environment.staging.ts && \
-    echo "export const environment = { production: true, apiUrl: '${API_URL}' };" > src/environments/environment.prod.ts
+# Se usa printf en lugar de echo para evitar problemas de expansión de variables en Alpine
+RUN printf 'export const environment = { production: false, apiUrl: "%s" };\n' "${API_URL}" > src/environments/environment.ts && \
+    printf 'export const environment = { production: false, apiUrl: "%s" };\n' "${API_URL}" > src/environments/environment.staging.ts && \
+    printf 'export const environment = { production: true, apiUrl: "%s" };\n' "${API_URL}" > src/environments/environment.prod.ts
+
+# Verificar que los environments quedaron correctos
+RUN echo "=== environment.ts ===" && cat src/environments/environment.ts && \
+    echo "=== environment.staging.ts ===" && cat src/environments/environment.staging.ts && \
+    echo "=== environment.prod.ts ===" && cat src/environments/environment.prod.ts
 
 # Compilar Angular SSR
 RUN npm run build -- --configuration=${BUILD_ENV}
