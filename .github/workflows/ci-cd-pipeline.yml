@@ -180,9 +180,8 @@ jobs:
           cd backend
           ./gradlew sonar \
             -Dsonar.projectKey=angie_FlyTrack \
-            -Dsonar.organization=angie-91d \
+            -Dsonar.organization=angiekb \
             -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.coverage.jacoco.xmlReportPaths=build/reports/jacoco/test/jacocoTestReport.xml \
             --no-daemon
 
