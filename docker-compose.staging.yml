@@ -21,6 +21,19 @@ services:
     networks:
       - flytrack-network
 
+  flytrack-front-staging:
+    image: ghcr.io/angiekb/flytrack-frontend:despliegue
+    container_name: flytrack-front-staging
+    environment:
+      PORT: 4000
+    ports:
+      - "4200:4000"
+    networks:
+      - flytrack-network
+    restart: unless-stopped
+    depends_on:
+      - flytrack-app-staging
+
   flytrack-app-staging:
     image: ${APP_IMAGE:-ghcr.io/angiekb/flytrack:tests}
     container_name: flytrack-app-staging
@@ -42,6 +55,7 @@ services:
       timeout: 10s
       retries: 5
       interval: 10s
+
 
 volumes:
   mysql-data-staging:
