@@ -67,7 +67,7 @@
                 }
               ],
               "optimization": true,
-              "outputHashing": "all",
+              "outputHashing": "all"
             },
             "development": {
               "fileReplacements": [
