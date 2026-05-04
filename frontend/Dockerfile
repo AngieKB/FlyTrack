@@ -14,12 +14,14 @@ COPY . .
 ARG BUILD_ENV=production
 ARG API_URL=http://localhost:8080/api
 
-# Reemplazar la URL del API en el environment correcto antes de compilar
-RUN if [ "$BUILD_ENV" = "production" ]; then \
-      sed -i "s|http://18.221.216.128:8080/api|${API_URL}|g" src/environments/environment.prod.ts; \
-    elif [ "$BUILD_ENV" = "staging" ]; then \
-      sed -i "s|http://18.220.140.37:8080/api|${API_URL}|g" src/environments/environment.staging.ts; \
-    fi
+# Argumentos de build
+ARG BUILD_ENV=production
+ARG API_URL=http://localhost:8080/api
+
+# Sobrescribir los archivos dinámicamente. Esto garantiza 100% que usarán la IP inyectada por GitHub Actions.
+RUN echo "export const environment = { production: false, apiUrl: '${API_URL}' };" > src/environments/environment.ts && \
+    echo "export const environment = { production: false, apiUrl: '${API_URL}' };" > src/environments/environment.staging.ts && \
+    echo "export const environment = { production: true, apiUrl: '${API_URL}' };" > src/environments/environment.prod.ts
 
 # Compilar Angular SSR con el environment correcto
 RUN npm run build -- --configuration=${BUILD_ENV}
