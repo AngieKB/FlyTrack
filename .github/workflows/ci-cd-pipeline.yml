@@ -320,7 +320,7 @@ jobs:
   deploy-production:
     runs-on: ubuntu-latest
     name: Deploy to Production (EC2)
-    needs: [docker-build, docker-build-frontend]
+    needs: [docker-build, docker-build-frontend,deploy-staging]
     if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && github.event_name == 'push'
 
     environment:
