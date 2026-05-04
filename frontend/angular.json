@@ -67,7 +67,8 @@
                 }
               ],
               "optimization": true,
-              "outputHashing": "all"
+              "outputHashing": "all",
+              "prerender": false
             },
             "development": {
               "fileReplacements": [
