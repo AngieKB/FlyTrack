@@ -10,8 +10,16 @@ RUN npm ci
 # Copiar código fuente completo
 COPY . .
 
-# Argumento para elegir el environment
+# Argumentos de build
 ARG BUILD_ENV=production
+ARG API_URL=http://localhost:8080/api
+
+# Reemplazar la URL del API en el environment correcto antes de compilar
+RUN if [ "$BUILD_ENV" = "production" ]; then \
+      sed -i "s|http://3.139.89.99:8080/api|${API_URL}|g" src/environments/environment.prod.ts; \
+    elif [ "$BUILD_ENV" = "staging" ]; then \
+      sed -i "s|http://3.138.193.246:8080/api|${API_URL}|g" src/environments/environment.staging.ts; \
+    fi
 
 # Compilar Angular SSR con el environment correcto
 RUN npm run build -- --configuration=${BUILD_ENV}
@@ -21,17 +29,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copiar el build completo
 COPY --from=builder /app/dist/frontend/server ./server
 COPY --from=builder /app/dist/frontend/browser ./browser
-
-# Instalar dependencias del servidor SSR
 COPY --from=builder /app/node_modules ./node_modules
 
-# Puerto del servidor SSR
 EXPOSE 4000
-
 ENV PORT=4000
 
-# Arrancar el servidor SSR
 CMD ["node", "server/server.mjs"]

@@ -269,6 +269,7 @@ jobs:
           push: true
           build-args: |
             BUILD_ENV=${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && 'production' || 'staging' }}
+            API_URL=${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && format('http://{0}:8080/api', secrets.EC2_HOST_PROD) || format('http://{0}:8080/api', secrets.EC2_HOST) }}
           tags: ${{ steps.repo.outputs.name }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -324,7 +325,7 @@ jobs:
 
     environment:
       name: production
-      url: http://3.139.89.99:8080
+      url: http://18.220.140.37:8080
 
     steps:
       - name: Deploy to Production EC2
@@ -353,8 +354,8 @@ jobs:
       - name: Notify Production Deployment
         run: |
           echo "✅ Producción desplegada exitosamente"
-          echo "🌐 Backend: http://3.139.89.99:8080"
-          echo "🌐 Frontend: http://3.139.89.99:4200"
+          echo "🌐 Backend: http://18.220.140.37:8080"
+          echo "🌐 Frontend: http://18.220.140.37:4200"
           echo "👤 Autor: ${{ github.actor }}"
           echo "🔖 Commit: ${{ github.sha }}"
 
