@@ -165,11 +165,11 @@ jobs:
           cache: gradle
 
       - name: Make gradlew executable
-        run: chmod +x ./Backend/gradlew
+        run: chmod +x ./backend/gradlew
 
       - name: Build for analysis
         run: |
-          cd Backend
+          cd backend
           ./gradlew build -x test --no-daemon
 
       - name: Run SonarCloud analysis
@@ -177,7 +177,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          cd Backend
+          cd backend
           ./gradlew sonarqube \
             -Dsonar.projectKey=angie_FlyTrack \
             -Dsonar.organization=angie-91d \
@@ -239,7 +239,7 @@ jobs:
   docker-build-frontend:
     runs-on: ubuntu-latest
     name: Build Frontend Docker Image
-    needs: test
+    needs: [test, quality-analysis]
     if: github.event_name == 'push'
 
     permissions:
