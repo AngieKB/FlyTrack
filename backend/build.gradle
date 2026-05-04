@@ -67,8 +67,8 @@ jacocoTestReport {
     }
 }
 
-// SonarQube Configuration
-sonarqube {
+// Sonar Configuration (Actualizado para v5+)
+sonar {
     properties {
         property "sonar.projectKey", "angie_FlyTrack"
         property "sonar.organization", "angie-91d"
@@ -77,8 +77,8 @@ sonarqube {
         property "sonar.sources", "src/main/java"
         property "sonar.tests", "src/test/java"
         property "sonar.exclusions", "src/main/java/**/DevopsApplication.java"
-        property "sonar.coverage.jacoco.xmlReportPaths",
-                "${project.buildDir}/reports/jacoco/test/jacocoTestReport.xml"
+        // Actualizado a la sintaxis moderna de Gradle 8 para evitar warnings
+        property "sonar.coverage.jacoco.xmlReportPaths", "${layout.buildDirectory.get()}/reports/jacoco/test/jacocoTestReport.xml"
         property "sonar.java.coveragePlugin", "jacoco"
         property "sonar.sourceEncoding", "UTF-8"
     }
