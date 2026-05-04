@@ -268,7 +268,7 @@ jobs:
           file: frontend/Dockerfile
           push: true
           build-args: |
-            BUILD_ENV=${{ (github.ref == 'refs/heads/main') && 'production' || 'staging' }}
+            BUILD_ENV=${{ (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/despliegue') && 'production' || 'staging' }}
           tags: ${{ steps.repo.outputs.name }}:${{ github.ref_name }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -291,25 +291,18 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           command_timeout: 15m
           script: |
-            # Login a GHCR
             echo "${{ secrets.GHCR_TOKEN }}" | \
               docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pre-descargar imágenes en paralelo para ahorrar tiempo
             docker pull ghcr.io/angiekb/flytrack:despliegue &
             docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
             wait
             echo "✅ Imágenes descargadas"
 
             cd /home/ec2-user/flytrack
-
-            # Bajar contenedores actuales
             docker-compose -f docker-compose.staging.yml down --remove-orphans
-
-            # Levantar con imágenes ya descargadas
             docker-compose -f docker-compose.staging.yml up -d
 
-            # Esperar que levanten
             sleep 20
             docker-compose -f docker-compose.staging.yml ps
 
@@ -342,25 +335,18 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY_PROD }}
           command_timeout: 15m
           script: |
-            # Login a GHCR
             echo "${{ secrets.GHCR_TOKEN }}" | \
               docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            # Pre-descargar imágenes en paralelo
             docker pull ghcr.io/angiekb/flytrack:despliegue &
             docker pull ghcr.io/angiekb/flytrack-frontend:despliegue &
             wait
             echo "✅ Imágenes descargadas"
 
             cd /home/ec2-user/flytrack
-
-            # Bajar contenedores actuales
             docker-compose -f docker-compose.prod.yml down --remove-orphans
-
-            # Levantar con imágenes ya descargadas
             docker-compose -f docker-compose.prod.yml up -d
 
-            # Esperar que levanten
             sleep 20
             docker-compose -f docker-compose.prod.yml ps
 
@@ -373,7 +359,7 @@ jobs:
           echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
-  # NOTIFICACIONES.
+  # NOTIFICACIONES
   # ============================================
   notify-failure:
     runs-on: ubuntu-latest
