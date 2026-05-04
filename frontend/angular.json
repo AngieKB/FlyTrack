@@ -63,7 +63,7 @@
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
-                  "with": "src/environments/environment.stagin.ts"
+                  "with": "src/environments/environment.staging.ts"
                 }
               ],
               "optimization": true,
@@ -97,7 +97,7 @@
               "buildTarget": "frontend:build:production"
             },
             "staging": {
-              "buildTarget": "frontend:build:stagin"
+              "buildTarget": "frontend:build:staging"
             },
             "development": {
               "buildTarget": "frontend:build:development"
