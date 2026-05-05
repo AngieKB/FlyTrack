@@ -35,7 +35,7 @@ services:
       - flytrack-app-staging
 
   flytrack-app-staging:
-    image: ${APP_IMAGE:-ghcr.io/angiekb/flytrack:tests}
+    image: ${APP_IMAGE:-ghcr.io/angiekb/flytrack:despliegue}
     container_name: flytrack-app-staging
     depends_on:
       mysql-staging:
