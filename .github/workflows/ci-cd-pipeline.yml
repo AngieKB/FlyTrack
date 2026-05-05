@@ -361,72 +361,72 @@ jobs:
   # ============================================
   # ETAPA 6: Despliegue a PRODUCCIÓN
   # ============================================
-  deploy-production:
-    runs-on: ubuntu-latest
-    name: Deploy to Production (EC2)
-    needs: [docker-build, docker-build-frontend, deploy-staging]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+  #deploy-production:
+  #  runs-on: ubuntu-latest
+  #  name: Deploy to Production (EC2)
+  #  needs: [docker-build, docker-build-frontend, deploy-staging]
+  #  if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
-    environment:
-      name: production
-      url: http://${{ secrets.EC2_HOST_PROD }}:8080
+  #  environment:
+  #    name: production
+  #    url: http://${{ secrets.EC2_HOST_PROD }}:8080
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  #  steps:
+  #    - name: Checkout code
+  #      uses: actions/checkout@v4
 
-      - name: Copy docker-compose.prod.yml to EC2
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.EC2_HOST_PROD }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY_PROD }}
-          source: "docker-compose.prod.yml"
-          target: "/home/ec2-user/flytrack/"
+  #    - name: Copy docker-compose.prod.yml to EC2
+  #      uses: appleboy/scp-action@v0.1.7
+  #      with:
+  #        host: ${{ secrets.EC2_HOST_PROD }}
+  #        username: ec2-user
+  #        key: ${{ secrets.EC2_SSH_KEY_PROD }}
+  #        source: "docker-compose.prod.yml"
+  #        target: "/home/ec2-user/flytrack/"
 
-      - name: Deploy to Production EC2
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.EC2_HOST_PROD }}
-          username: ec2-user
-          key: ${{ secrets.EC2_SSH_KEY_PROD }}
-          command_timeout: 15m
-          script: |
-            echo "${{ secrets.GHCR_TOKEN }}" | \
-              docker login ghcr.io -u ${{ github.actor }} --password-stdin
+  #    - name: Deploy to Production EC2
+  #      uses: appleboy/ssh-action@v1
+  #      with:
+  #        host: ${{ secrets.EC2_HOST_PROD }}
+  #        username: ec2-user
+  #        key: ${{ secrets.EC2_SSH_KEY_PROD }}
+  #        command_timeout: 15m
+  #        script: |
+  #          echo "${{ secrets.GHCR_TOKEN }}" | \
+  #            docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            BRANCH_TAG="${{ github.ref_name }}"
-            echo "📦 Descargando imágenes con tag: ${BRANCH_TAG}"
-            docker pull ghcr.io/angiekb/flytrack:${BRANCH_TAG} &
-            docker pull ghcr.io/angiekb/flytrack-frontend:${BRANCH_TAG} &
-            wait
-            echo "✅ Imágenes descargadas"
+  #          BRANCH_TAG="${{ github.ref_name }}"
+  #          echo "📦 Descargando imágenes con tag: ${BRANCH_TAG}"
+  #          docker pull ghcr.io/angiekb/flytrack:${BRANCH_TAG} &
+  #          docker pull ghcr.io/angiekb/flytrack-frontend:${BRANCH_TAG} &
+  #          wait
+  #          echo "✅ Imágenes descargadas"
 
-            cd /home/ec2-user/flytrack
+  #          cd /home/ec2-user/flytrack
 
-            docker-compose -f docker-compose.prod.yml down --remove-orphans
-            docker-compose -f docker-compose.prod.yml up -d
+  #          docker-compose -f docker-compose.prod.yml down --remove-orphans
+  #          docker-compose -f docker-compose.prod.yml up -d
 
-            echo "⏳ Esperando que el backend esté listo..."
-            for i in {1..24}; do
-              if wget --quiet --tries=1 --spider http://localhost:8080/actuator/health 2>/dev/null; then
-                echo "✅ Backend listo"
-                break
-              fi
-              echo "Esperando backend... ($i/24)"
-              sleep 5
-            done
+  #          echo "⏳ Esperando que el backend esté listo..."
+  #          for i in {1..24}; do
+  #            if wget --quiet --tries=1 --spider http://localhost:8080/actuator/health 2>/dev/null; then
+  #              echo "✅ Backend listo"
+  #              break
+  #            fi
+  #            echo "Esperando backend... ($i/24)"
+  #            sleep 5
+  #          done
 
-            docker-compose -f docker-compose.prod.yml ps
+  #          docker-compose -f docker-compose.prod.yml ps
 
-      - name: Notify Production Deployment
-        run: |
-          echo "✅ Producción desplegada exitosamente"
-          echo "🌐 Backend:  http://${{ secrets.EC2_HOST_PROD }}:8080"
-          echo "🌐 Frontend: http://${{ secrets.EC2_HOST_PROD }}:4200"
-          echo "👤 Autor: ${{ github.actor }}"
-          echo "🔖 Rama: ${{ github.ref_name }}"
-          echo "🔖 Commit: ${{ github.sha }}"
+  #    - name: Notify Production Deployment
+  #      run: |
+  #        echo "✅ Producción desplegada exitosamente"
+  #        echo "🌐 Backend:  http://${{ secrets.EC2_HOST_PROD }}:8080"
+  #        echo "🌐 Frontend: http://${{ secrets.EC2_HOST_PROD }}:4200"
+  #        echo "👤 Autor: ${{ github.actor }}"
+  #        echo "🔖 Rama: ${{ github.ref_name }}"
+  #        echo "🔖 Commit: ${{ github.sha }}"
 
   # ============================================
   # NOTIFICACIONES.
