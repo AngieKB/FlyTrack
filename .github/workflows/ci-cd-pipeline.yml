@@ -369,7 +369,7 @@ jobs:
 
     environment:
       name: production
-      url: http://${{ secrets.EC2_HOST_PROD }}:8080
+      url: http://18.220.140.37:8080
 
     steps:
       - name: Checkout code
