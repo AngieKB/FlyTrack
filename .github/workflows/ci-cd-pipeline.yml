@@ -435,7 +435,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Notify on Failure
     if: failure()
-    needs: [build, test, quality-analysis, docker-build, docker-build-frontend, deploy-staging, deploy-production]
+    needs: [build, test, quality-analysis, docker-build, docker-build-frontend, deploy-staging]
 
     steps:
       - name: Send failure notification
